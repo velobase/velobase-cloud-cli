@@ -1,11 +1,11 @@
-# @velobase/cloud-cli
+# @velobaseai/cloud-cli
 
 Adapt, deploy, and observe your projects on [Velobase Cloud](https://velobase.cloud).
 
 ## Install
 
 ```bash
-npm install -g @velobase/cloud-cli
+npm install -g @velobaseai/cloud-cli
 ```
 
 ## Quick Start

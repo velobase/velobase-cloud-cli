@@ -1,5 +1,5 @@
 {
-  "name": "@velobase/cloud-cli",
+  "name": "@velobaseai/cloud-cli",
   "version": "0.1.1",
   "description": "Velobase Cloud CLI — adapt, deploy, and observe your projects on Velobase Cloud",
   "type": "module",
