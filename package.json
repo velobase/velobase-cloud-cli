@@ -1,0 +1,45 @@
+{
+  "name": "@velobase/cloud-cli",
+  "version": "0.1.0",
+  "description": "Velobase Cloud CLI — adapt, deploy, and observe your projects on Velobase Cloud",
+  "type": "module",
+  "bin": {
+    "velobase-cloud": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "velobase",
+    "cloud",
+    "cli",
+    "deploy",
+    "devtools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/velobase/velobase-cloud-cli.git"
+  },
+  "homepage": "https://github.com/velobase/velobase-cloud-cli#readme",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "ora": "^9.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.8.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3"
+  }
+}
