@@ -1,6 +1,6 @@
 {
   "name": "@velobase/cloud-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Velobase Cloud CLI — adapt, deploy, and observe your projects on Velobase Cloud",
   "type": "module",
   "bin": {
