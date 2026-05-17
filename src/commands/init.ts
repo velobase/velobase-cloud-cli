@@ -7,6 +7,7 @@ import { api, withGitHubRetry } from "../api/client.js";
 import type {
   CreateProjectResponse,
   GitHubRepo,
+  ProjectStatus,
   WorkflowTemplateResponse,
 } from "../api/types.js";
 import { saveProjectConfig, hasProjectConfig, getProjectConfig } from "../config/project.js";
@@ -88,6 +89,8 @@ export const initCommand = new Command("init")
       label("Project ID", created.projectId);
       label("Subdomain", created.subdomain);
       label("URL", created.url);
+      label("API Key", created.apiKey.rawKey);
+      warn("Save this API key — it is shown only once.");
 
       // Write workflow template
       heading("Setting Up GitHub Actions");
@@ -119,13 +122,13 @@ export const initCommand = new Command("init")
         await withGitHubRetry(() =>
           api.post(`/api/cli/projects/${created.projectId}/setup-secrets`, {
             githubRepo: remote.fullName,
+            apiKey: created.apiKey.rawKey,
           }),
         );
         secretSpinner.succeed("GitHub secrets configured");
       } catch (err) {
         secretSpinner.warn("Could not auto-configure GitHub secrets");
-        info("Set these secrets manually in your GitHub repo settings:");
-        dim("VELOBASE_DEPLOY_KEY — your deploy API key");
+        info("Set VELOBASE_API_KEY manually in your GitHub repo settings using the key above.");
       }
 
       // Save local project config
@@ -141,6 +144,40 @@ export const initCommand = new Command("init")
         },
         cwd,
       );
+
+      // Wait for cloud resource provisioning to complete
+      heading("Provisioning Cloud Resources");
+      const provSpinner = ora("Provisioning cloud resources...").start();
+      const maxWait = 120_000;
+      const interval = 3_000;
+      const provStart = Date.now();
+      let provDone = false;
+      while (Date.now() - provStart < maxWait) {
+        try {
+          const s = await api.get<ProjectStatus>(
+            `/api/cli/projects/${created.projectId}/status`,
+          );
+          if (s.project.status === "ACTIVE") {
+            provSpinner.succeed("Cloud resources provisioned (PG, Redis, K8s, R2, Ingress)");
+            provDone = true;
+            break;
+          }
+          if (s.project.provisioningError) {
+            provSpinner.fail(`Provisioning failed: ${s.project.provisioningError}`);
+            info("You can reset the project in the web console and retry with `velobase-cloud init --force`.");
+            provDone = true;
+            break;
+          }
+          const step = s.project.provisioningStep ?? "starting";
+          provSpinner.text = `Provisioning: ${step}...`;
+        } catch {
+          // Transient network error — keep polling
+        }
+        await new Promise((r) => setTimeout(r, interval));
+      }
+      if (!provDone) {
+        provSpinner.warn("Provisioning still in progress. Run `velobase-cloud status` to check.");
+      }
 
       heading("Done");
       success("Project initialized for Velobase Cloud.");

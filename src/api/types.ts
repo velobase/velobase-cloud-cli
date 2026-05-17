@@ -50,6 +50,8 @@ export interface ProjectSummary {
   name: string;
   subdomain: string;
   status: string;
+  provisioningStep: string | null;
+  provisioningError: string | null;
   url: string;
   githubRepoUrl: string | null;
   latestDeploy: {
