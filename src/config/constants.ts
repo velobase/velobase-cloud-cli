@@ -13,4 +13,6 @@ export const PROJECT_CONFIG_FILE = "config.json";
 
 export const TOKEN_PREFIX = "vbc_";
 export const POLL_INTERVAL_MS = 5000;
+export const DEPLOY_POLL_INTERVAL_MS = 10_000;
+export const MAX_DEPLOY_WATCH_MS = 5 * 60 * 1000;
 export const DEVICE_CODE_TTL_MINUTES = 10;

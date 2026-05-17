@@ -2,7 +2,7 @@ import { Command } from "commander";
 import ora from "ora";
 import chalk from "chalk";
 import { api, withGitHubRetry } from "../api/client.js";
-import type { WorkflowRun, WorkflowJob, DeploymentSummary } from "../api/types.js";
+import type { WorkflowRun, WorkflowJob, DeploymentSummary, DeploymentLogs } from "../api/types.js";
 import { requireProject } from "../lib/require-project.js";
 import {
   heading,
@@ -15,7 +15,7 @@ import {
   relativeTime,
 } from "../lib/format.js";
 import { handleError } from "../lib/error-handler.js";
-import { POLL_INTERVAL_MS } from "../config/constants.js";
+import { POLL_INTERVAL_MS, DEPLOY_POLL_INTERVAL_MS, MAX_DEPLOY_WATCH_MS } from "../config/constants.js";
 
 const triggerCmd = new Command("trigger")
   .description("Trigger a deployment via GitHub Actions")
@@ -74,6 +74,10 @@ const triggerCmd = new Command("trigger")
     }
   });
 
+const DEPLOY_TERMINAL_STATES = new Set([
+  "SUCCEEDED", "FAILED", "CANCELLED", "PARTIAL_FAILED", "ROLLED_BACK",
+]);
+
 async function watchWorkflow(projectId: string, runId: number) {
   const spinner = ora("Watching workflow...").start();
 
@@ -89,7 +93,8 @@ async function watchWorkflow(projectId: string, runId: number) {
 
       if (run.status === "completed") {
         if (run.conclusion === "success") {
-          spinner.succeed("Deployment workflow completed successfully");
+          spinner.succeed("GitHub Actions workflow completed");
+          await watchCloudDeployment(projectId);
         } else {
           spinner.fail(`Workflow ${run.conclusion ?? "failed"}`);
           info(`Details: ${run.htmlUrl}`);
@@ -100,6 +105,51 @@ async function watchWorkflow(projectId: string, runId: number) {
       // keep polling
     }
   }
+}
+
+async function watchCloudDeployment(projectId: string) {
+  const spinner = ora("Tracking Cloud deployment status...").start();
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < MAX_DEPLOY_WATCH_MS) {
+    await new Promise((r) => setTimeout(r, DEPLOY_POLL_INTERVAL_MS));
+
+    try {
+      const dep = await api.get<DeploymentLogs>(
+        `/api/cli/projects/${projectId}/deployments/latest`,
+      );
+      if (!dep) continue;
+
+      spinner.text = `Cloud deployment: ${stateColor(dep.status)}`;
+
+      if (DEPLOY_TERMINAL_STATES.has(dep.status)) {
+        if (dep.status === "SUCCEEDED") {
+          spinner.succeed("Cloud deployment succeeded");
+        } else {
+          spinner.fail(`Cloud deployment ${dep.status}`);
+          if (dep.errorMessage) fail(dep.errorMessage);
+        }
+        return;
+      }
+    } catch {
+      // keep polling
+    }
+  }
+
+  let currentStatus = "unknown";
+  let deployId = "";
+  try {
+    const dep = await api.get<DeploymentLogs>(
+      `/api/cli/projects/${projectId}/deployments/latest`,
+    );
+    currentStatus = dep.status;
+    deployId = dep.id;
+  } catch { /* ignore */ }
+
+  const elapsed = Math.round((Date.now() - startTime) / 1000);
+  spinner.warn(`Timed out after ${elapsed}s — deployment still ${currentStatus}`);
+  if (deployId) info(`Deployment ID: ${deployId.slice(0, 8)}`);
+  info("This does not mean failure. Run `velobase-cloud deploy status` to check progress.");
 }
 
 const runsCmd = new Command("runs")
