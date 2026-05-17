@@ -17,7 +17,7 @@ const program = new Command();
 program
   .name("velobase-cloud")
   .description("Adapt, deploy, and observe your projects on Velobase Cloud")
-  .version("0.1.0");
+  .version(__CLI_VERSION__);
 
 program.addCommand(loginCommand);
 program.addCommand(logoutCommand);

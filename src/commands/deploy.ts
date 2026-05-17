@@ -33,10 +33,39 @@ const triggerCmd = new Command("trigger")
         ),
       );
       spinner.succeed("Workflow triggered");
-      label("Workflow Run", `#${result.workflowRunId}`);
+
+      let runId = result.workflowRunId;
+
+      if (runId === 0 && opts.watch) {
+        const resolveSpinner = ora("Resolving workflow run ID...").start();
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+          try {
+            const runs = await api.get<WorkflowRun[]>(
+              `/api/cli/projects/${config.projectId}/workflow/runs?limit=1`,
+            );
+            if (runs.length > 0) {
+              runId = runs[0]!.id;
+              break;
+            }
+          } catch {
+            // retry
+          }
+        }
+        if (runId === 0) {
+          resolveSpinner.fail("Could not determine workflow run ID");
+          info("Check status with `velobase-cloud deploy runs`.");
+          return;
+        }
+        resolveSpinner.succeed(`Found workflow run #${runId}`);
+      }
+
+      if (runId > 0) {
+        label("Workflow Run", `#${runId}`);
+      }
 
       if (opts.watch) {
-        await watchWorkflow(config.projectId, result.workflowRunId);
+        await watchWorkflow(config.projectId, runId);
       } else {
         info("Use --watch to follow execution, or run `velobase-cloud deploy runs`.");
       }
