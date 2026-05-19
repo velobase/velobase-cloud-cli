@@ -192,6 +192,10 @@ export interface EnvVar {
   updatedAt: string;
 }
 
+export interface EnvApplyResponse {
+  deploymentId: string;
+}
+
 // ── Errors ──
 
 export interface ApiErrorResponse {
