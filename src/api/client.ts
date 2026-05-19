@@ -82,6 +82,16 @@ async function rawRequest<T>(
         clearCredentials();
       }
 
+      // Rate limited — wait and retry once using server-provided Retry-After
+      if (res.status === 429 && attempt < MAX_RETRIES) {
+        const retryAfterHeader = res.headers.get("Retry-After");
+        const waitSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 5;
+        const waitMs = Math.min(waitSec * 1000, 60_000);
+        lastError = new ApiError(429, code, msg);
+        await sleep(waitMs);
+        continue;
+      }
+
       if (res.status >= 500 && attempt < MAX_RETRIES) {
         lastError = new ApiError(res.status, code, msg);
         await sleep(RETRY_BASE_MS * Math.pow(2, attempt - 1));
