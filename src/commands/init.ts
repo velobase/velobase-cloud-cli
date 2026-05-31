@@ -89,6 +89,14 @@ export const initCommand = new Command("init")
       label("Project ID", created.projectId);
       label("Subdomain", created.subdomain);
       label("URL", created.url);
+      if (created.projectEntitlement) {
+        label(
+          "Project Slot",
+          `${created.projectEntitlement.sourceType.toLowerCase()} · ${created.projectEntitlement.status.toLowerCase()}`,
+        );
+        label("Valid Until", created.projectEntitlement.expiresAt);
+      }
+      label("App Budget", `${created.appBudget.cpu} CPU / ${created.appBudget.memory} memory`);
       label("API Key", created.apiKey.rawKey);
       warn("Save this API key — it is shown only once.");
 

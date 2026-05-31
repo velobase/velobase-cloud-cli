@@ -32,6 +32,14 @@ export const statusCommand = new Command("status")
       label("Project", `${status.project.name} (${status.project.subdomain})`);
       label("URL", status.project.url);
       label("Status", stateColor(status.project.status));
+      if (status.project.projectEntitlement) {
+        const entitlement = status.project.projectEntitlement;
+        label("Project Slot", `${entitlement.sourceType.toLowerCase()} · ${entitlement.status.toLowerCase()}`);
+        label("Valid Until", entitlement.expiresAt);
+      }
+      if (status.project.appBudget) {
+        label("App Budget", `${status.project.appBudget.cpu} CPU / ${status.project.appBudget.memory} memory`);
+      }
 
       // Runtime
       heading("Runtime");
@@ -43,6 +51,11 @@ export const statusCommand = new Command("status")
           `  ${stateColor(svc.state)} ${chalk.bold(svc.name)} — pods: ${ready}${restarts}`,
         );
         dim(`  CPU: ${svc.cpuMillicores}m  Memory: ${svc.memoryMB}MB`);
+        if (svc.resources) {
+          dim(
+            `  Request: ${svc.resources.cpuRequest ?? "?"} / ${svc.resources.memoryRequest ?? "?"}  Limit: ${svc.resources.cpuLimit ?? "?"} / ${svc.resources.memoryLimit ?? "?"}`,
+          );
+        }
       }
 
       // Health

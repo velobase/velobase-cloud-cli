@@ -9,6 +9,17 @@ export function handleError(err: unknown): never {
     } else if (err.isForbidden) {
       fail(err.message || "Access denied.");
       info("You may have exceeded your resource quota or your account may be suspended.");
+    } else if (isBillingError(err)) {
+      fail(err.message || "Project billing action required.");
+      const price = typeof err.details?.price === "string" ? err.details.price : "$59.90/month";
+      const billingUrl = typeof err.details?.billingUrl === "string" ? err.details.billingUrl : undefined;
+      info(`Velobase Cloud projects are billed per project slot (${price}).`);
+      if (err.code === "PROJECT_OVERDUE") {
+        info("Restore the project subscription before deploying or applying changes.");
+      } else {
+        info("Purchase a project slot, then run `velobase-cloud init` again.");
+      }
+      if (billingUrl) info(`Billing page: ${billingUrl}`);
     } else if (err.isRateLimit) {
       fail("Too many requests. Please wait a moment and try again.");
     } else {
@@ -20,4 +31,12 @@ export function handleError(err: unknown): never {
     fail("An unexpected error occurred.");
   }
   process.exit(1);
+}
+
+function isBillingError(err: ApiError) {
+  return err.status === 402
+    || err.code === "PROJECT_ENTITLEMENT_REQUIRED"
+    || err.code === "PROJECT_TRIALS_USED_UP"
+    || err.code === "PROJECT_OVERDUE"
+    || err.code === "APP_BUDGET_EXCEEDED";
 }

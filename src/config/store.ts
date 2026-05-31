@@ -53,13 +53,16 @@ export function clearCredentials() {
 }
 
 export function getToken(): string | null {
+  if (process.env.VELOBASE_CLOUD_TOKEN) {
+    return process.env.VELOBASE_CLOUD_TOKEN;
+  }
   return getCredentials()?.token ?? null;
 }
 
 export function getGlobalConfig(): GlobalConfig {
   const saved = readJson<Partial<GlobalConfig>>(CONFIG_FILE);
   return {
-    apiBase: saved?.apiBase ?? DEFAULT_API_BASE,
+    apiBase: process.env.VELOBASE_CLOUD_API_BASE ?? saved?.apiBase ?? DEFAULT_API_BASE,
   };
 }
 

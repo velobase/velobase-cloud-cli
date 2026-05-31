@@ -11,6 +11,7 @@ import { doctorCommand } from "./commands/doctor.js";
 import { deployCommand } from "./commands/deploy.js";
 import { envCommand } from "./commands/env.js";
 import { configCommand } from "./commands/config.js";
+import { billingCommand } from "./commands/billing.js";
 
 const program = new Command();
 
@@ -31,5 +32,6 @@ program.addCommand(doctorCommand);
 program.addCommand(deployCommand);
 program.addCommand(envCommand);
 program.addCommand(configCommand);
+program.addCommand(billingCommand);
 
 program.parse();

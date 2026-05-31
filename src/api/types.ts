@@ -44,6 +44,46 @@ export interface GitHubRepo {
 
 // ── Projects ──
 
+export interface ProjectEntitlement {
+  id: string;
+  sourceType: "FREE_TRIAL" | "PAID_SUBSCRIPTION" | "ADMIN_GRANT" | string;
+  status: string;
+  startsAt: string;
+  expiresAt: string;
+  cancelAtPeriodEnd: boolean;
+}
+
+export interface AppBudget {
+  cpu: string;
+  memory: string;
+  addonUnits: number;
+}
+
+export interface ProjectPlan {
+  mode: "project_monthly" | string;
+  price: string;
+  billingUrl: string;
+  included: {
+    postgres: string;
+    redis: string;
+    appCpu: string;
+    appMemory: string;
+  };
+}
+
+export interface BillingStatus extends ProjectPlan {
+  slots: {
+    active: number;
+    available: number;
+    initializing: number;
+    trialUsed: number;
+    trialLimit: number;
+    trialRemaining: number;
+  };
+  hasAvailableSlot: boolean;
+  recommendedAction: "run_init" | "purchase_project_slot" | string;
+}
+
 export interface ProjectSummary {
   id: string;
   tenantId: string;
@@ -54,6 +94,9 @@ export interface ProjectSummary {
   provisioningError: string | null;
   url: string;
   githubRepoUrl: string | null;
+  dataPlaneMode?: string;
+  appBudget?: AppBudget | null;
+  projectEntitlement?: ProjectEntitlement | null;
   latestDeploy: {
     id: string;
     status: string;
@@ -64,9 +107,6 @@ export interface ProjectSummary {
 
 export interface ProjectDetail extends ProjectSummary {
   customDomain: string | null;
-  planTier: string | null;
-  resourceUnits: number;
-  maxResourceUnits: number;
   apiKeyPrefix: string | null;
 }
 
@@ -80,6 +120,9 @@ export interface CreateProjectResponse {
     rawKey: string;
     keyPrefix: string;
   };
+  billing: ProjectPlan;
+  projectEntitlement: ProjectEntitlement | null;
+  appBudget: AppBudget;
 }
 
 // ── Deployments ──
@@ -114,6 +157,12 @@ export interface ServiceHealth {
   cpuMillicores: number;
   memoryMB: number;
   restartCount: number;
+  resources?: {
+    cpuRequest: string | null;
+    memoryRequest: string | null;
+    cpuLimit: string | null;
+    memoryLimit: string | null;
+  };
 }
 
 export interface ProjectStatus {
@@ -202,6 +251,10 @@ export interface ApiErrorResponse {
   error: string;
   code?: string;
   details?: unknown;
+  billingUrl?: string;
+  price?: string;
+  recommendedAction?: string;
+  included?: ProjectPlan["included"];
 }
 
 export type GitHubErrorCode =

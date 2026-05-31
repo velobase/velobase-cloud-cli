@@ -77,6 +77,7 @@ async function rawRequest<T>(
       const errBody = await parseErrorBody(res);
       const code = errBody.code ?? `HTTP_${res.status}`;
       const msg = errBody.error ?? res.statusText;
+      const details = errBody as unknown as Record<string, unknown>;
 
       if (res.status === 401) {
         clearCredentials();
@@ -87,18 +88,18 @@ async function rawRequest<T>(
         const retryAfterHeader = res.headers.get("Retry-After");
         const waitSec = retryAfterHeader ? parseInt(retryAfterHeader, 10) : 5;
         const waitMs = Math.min(waitSec * 1000, 60_000);
-        lastError = new ApiError(429, code, msg);
+        lastError = new ApiError(429, code, msg, details);
         await sleep(waitMs);
         continue;
       }
 
       if (res.status >= 500 && attempt < MAX_RETRIES) {
-        lastError = new ApiError(res.status, code, msg);
+        lastError = new ApiError(res.status, code, msg, details);
         await sleep(RETRY_BASE_MS * Math.pow(2, attempt - 1));
         continue;
       }
 
-      throw new ApiError(res.status, code, msg);
+      throw new ApiError(res.status, code, msg, details);
     } catch (err) {
       if (err instanceof ApiError) throw err;
       // Network error — retry
